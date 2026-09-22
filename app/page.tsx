@@ -274,7 +274,9 @@ export default function Home() {
   useEffect(() => {
     if (gameMode === 'local_ai') {
       if (!workerRef.current) {
-        workerRef.current = new Worker(new URL('../utils/ai.worker.ts', import.meta.url));
+        // workerRef.current = new Worker(new URL('./ai.worker.ts', import.meta.url));
+        workerRef.current = undefined as any; // 임시 조치 (빌드 에러 원인 확인용)
+        /*
         workerRef.current.onmessage = (e) => {
           if (e.data.type === 'SUCCESS') {
             const { bestMove } = e.data;
@@ -291,6 +293,7 @@ export default function Home() {
             console.error('AI Error:', e.data.error);
           }
         };
+        */
       }
 
       if (turn === 'han' && !winner) {
