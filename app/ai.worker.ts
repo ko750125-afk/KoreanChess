@@ -1,5 +1,5 @@
 import { PieceState, Camp } from '../types';
-import { findBestMove } from './ai';
+import { findBestMove } from '../utils/ai';
 
 self.onmessage = (e: MessageEvent) => {
   const { board, depth, aiCamp } = e.data as { board: PieceState[]; depth: number; aiCamp: Camp };

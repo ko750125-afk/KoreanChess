@@ -274,9 +274,7 @@ export default function Home() {
   useEffect(() => {
     if (gameMode === 'local_ai') {
       if (!workerRef.current) {
-        // workerRef.current = new Worker(new URL('./ai.worker.ts', import.meta.url));
-        workerRef.current = undefined as any; // 임시 조치 (빌드 에러 원인 확인용)
-        /*
+        workerRef.current = new Worker(new URL('./ai.worker.ts', import.meta.url));
         workerRef.current.onmessage = (e) => {
           if (e.data.type === 'SUCCESS') {
             const { bestMove } = e.data;
@@ -293,12 +291,11 @@ export default function Home() {
             console.error('AI Error:', e.data.error);
           }
         };
-        */
       }
 
       if (turn === 'han' && !winner) {
         // AI에게 현재 보드 상태 전달하여 연산 지시 (기본 깊이 3)
-        workerRef.current.postMessage({
+        workerRef.current?.postMessage({
           board: stateRef.current.pieces,
           depth: 3,
           aiCamp: 'han'
