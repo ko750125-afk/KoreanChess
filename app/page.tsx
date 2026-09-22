@@ -164,7 +164,7 @@ export default function Home() {
         });
 
         // 방에 2명 이상 들어왔고, 내가 호스트(index 0)라면 글로벌 로비에서 내 방을 숨김 처리
-        if (users.length >= 2 && users[0].user_id === myUserId && lobbyChannelRef.current) {
+        if (users.length >= 2 && (users[0] as any).user_id === myUserId && lobbyChannelRef.current) {
           lobbyChannelRef.current.track({ user_id: myUserId, isHosting: false });
         }
         
