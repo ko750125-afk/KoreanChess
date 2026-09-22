@@ -186,6 +186,7 @@ export default function Home() {
       document.removeEventListener('visibilitychange', handleVisibilityChange);
       supabase.removeChannel(roomChannel);
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const copyRoomLink = () => {

@@ -61,8 +61,8 @@ export default function Piece({ piece, onClick, isSelected = false, isCaptured =
 
   return (
     <animated.group
-      position={position}
-      scale={springScale}
+      position={position as any}
+      scale={springScale as any}
       onClick={(e) => {
         if (isCaptured) return;
         e.stopPropagation();
