@@ -449,17 +449,18 @@ export default function Home() {
     applyMove(selectedPieceId, x, y, turn);
   };
 
-  const createRoom = async () => {
+  const createRoom = () => {
     if (!roomNameInput.trim()) return;
     const newRoomId = generateRoomId();
     isCreator.current = true; // 방을 만든 사람은 무조건 초나라
     if (lobbyChannelRef.current) {
-      await lobbyChannelRef.current.track({
+      // UI 즉각 전환을 위해 await 제거 (Fire and forget)
+      lobbyChannelRef.current.track({
         user_id: myUserId,
         isHosting: true,
         roomName: roomNameInput.trim(),
         roomId: newRoomId
-      });
+      }).catch(console.error);
     }
     window.history.replaceState(null, '', `?room=${newRoomId}`);
     setRoomId(newRoomId);
