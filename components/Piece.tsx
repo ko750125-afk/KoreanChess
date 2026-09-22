@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSpring, animated } from '@react-spring/three';
 import { Cylinder, Html } from '@react-three/drei';
 import { PieceState, PIECE_TEXT } from '../types';
@@ -33,13 +33,11 @@ export default function Piece({ piece, onClick, isSelected = false, isCaptured =
     pieceHeight = 0.13;
   }
 
-  let textScale = 0.20; 
+  let textScale = 0.26; // 작은 알 (졸/병, 사) 기본값
   if (piece.type === 'king') {
-    textScale = 0.15;
+    textScale = 0.38; // 큰 알 (비례치 0.46에서 조금 더 줄임)
   } else if (['chariot', 'cannon', 'horse', 'elephant'].includes(piece.type)) {
-    textScale = 0.20;
-  } else {
-    textScale = 0.26;
+    textScale = 0.31; // 중간 알 (비례치 0.34에서 아주 약간 줄임)
   }
 
   // 3D 목표 좌표
@@ -50,14 +48,75 @@ export default function Piece({ piece, onClick, isSelected = false, isCaptured =
   // 잡혔을 경우 크기를 0으로, 아니면 원래 크기로
   const targetScale = isCaptured ? 0 : scale;
 
-  // React Spring 애니메이션 적용
-  const { position, springScale } = useSpring({
+  // React Spring 애니메이션 설정 (api를 통해 수동 제어)
+  const prevPosRef = useRef({ x: piece.x, y: piece.y });
+  
+  const [{ position, springScale }, api] = useSpring(() => ({
     position: [targetX, targetY, targetZ] as [number, number, number],
     springScale: [targetScale, targetScale, targetScale] as [number, number, number],
     config: isCaptured 
-      ? { mass: 1, tension: 250, friction: 20 } // 잡힐 때는 빠르게 축소
-      : { mass: 1, tension: 170, friction: 26 }, // 이동 시에는 부드럽게
-  });
+      ? { mass: 1, tension: 250, friction: 20 }
+      : { mass: 1, tension: 220, friction: 24 }, // 다단계 경로를 위해 살짝 더 빠르고 경쾌하게
+  }));
+
+  useEffect(() => {
+    if (isCaptured) {
+      api.start({ springScale: [0, 0, 0] });
+      return;
+    }
+
+    const prevX = prevPosRef.current.x;
+    const prevY = prevPosRef.current.y;
+    
+    // 위치 이동이 감지된 경우
+    if (prevX !== piece.x || prevY !== piece.y) {
+      const dx = piece.x - prevX;
+      const dy = piece.y - prevY;
+      
+      // 마 (Horse) 경로 계산: 직진 1칸 -> 대각 1칸
+      if (piece.type === 'horse' && (Math.abs(dx) + Math.abs(dy) === 3)) {
+        const midX = Math.abs(dx) === 2 ? prevX + dx / 2 : prevX;
+        const midY = Math.abs(dy) === 2 ? prevY + dy / 2 : prevY;
+        const [mid3DX, mid3DY, mid3DZ] = get3DCoords(midX, midY, yPos);
+        
+        api.start({
+          to: async (next) => {
+            await next({ position: [mid3DX, mid3DY, mid3DZ] });
+            await next({ position: [targetX, targetY, targetZ] });
+          }
+        });
+      } 
+      // 상 (Elephant) 경로 계산: 직진 1칸 -> 대각 2칸
+      else if (piece.type === 'elephant' && (Math.abs(dx) + Math.abs(dy) === 5)) {
+        const mid1X = prevX + (Math.abs(dx) === 3 ? Math.sign(dx) : 0);
+        const mid1Y = prevY + (Math.abs(dy) === 3 ? Math.sign(dy) : 0);
+        const [m1X, m1Y, m1Z] = get3DCoords(mid1X, mid1Y, yPos);
+
+        const mid2X = mid1X + Math.sign(dx);
+        const mid2Y = mid1Y + Math.sign(dy);
+        const [m2X, m2Y, m2Z] = get3DCoords(mid2X, mid2Y, yPos);
+
+        api.start({
+          to: async (next) => {
+            await next({ position: [m1X, m1Y, m1Z] });
+            await next({ position: [m2X, m2Y, m2Z] });
+            await next({ position: [targetX, targetY, targetZ] });
+          }
+        });
+      } else {
+        // 기본 직선 이동 (차, 포, 졸, 사, 궁 등)
+        api.start({ position: [targetX, targetY, targetZ], springScale: [targetScale, targetScale, targetScale] });
+      }
+      
+      prevPosRef.current = { x: piece.x, y: piece.y };
+    } else {
+      // 이동이 아닌 속성(크기 등) 변경 시
+      api.start({
+        position: [targetX, targetY, targetZ],
+        springScale: [targetScale, targetScale, targetScale],
+      });
+    }
+  }, [piece.x, piece.y, isCaptured, targetX, targetY, targetZ, targetScale, api, yPos, piece.type]);
 
   return (
     <animated.group
@@ -81,7 +140,11 @@ export default function Piece({ piece, onClick, isSelected = false, isCaptured =
     >
       {/* 8각 기둥 (실제 장기말 모양, 22.5도 회전) */}
       <Cylinder args={[0.45, 0.45, pieceHeight, 8]} rotation={[0, Math.PI / 8, 0]}>
-        <meshStandardMaterial color={hovered || isSelected ? '#ffefd5' : '#e6c280'} />
+        <meshStandardMaterial 
+          color={hovered || isSelected ? '#e0f7fa' : '#ffffff'} 
+          roughness={0.2}
+          metalness={0.1}
+        />
       </Cylinder>
         
       {/* 기물 한자 텍스트 (Cylinder 밖으로 분리하여 기울어짐 방지) */}

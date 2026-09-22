@@ -2,6 +2,7 @@
 
 class AudioService {
   private ctx: AudioContext | null = null;
+  private moveAudio: HTMLAudioElement | null = null;
 
   private init() {
     if (!this.ctx && typeof window !== 'undefined') {
@@ -9,6 +10,7 @@ class AudioService {
       if (AudioContextClass) {
         this.ctx = new AudioContextClass();
       }
+      this.moveAudio = new Audio('/2026_09_22_20_46_30.mp3');
     }
   }
 
@@ -66,7 +68,7 @@ class AudioService {
     osc2.stop(this.ctx.currentTime + 0.1);
   }
 
-  // 기물 놓을 때 묵직한 마찰음 (딱!)
+  // 기물 놓을 때 착수음 (딱!) - MP3 딜레이 제거를 위해 직접 합성
   public playMoveSound() {
     this.init();
     if (!this.ctx) return;
@@ -74,20 +76,18 @@ class AudioService {
     const osc = this.ctx.createOscillator();
     const gainNode = this.ctx.createGain();
 
-    // 나무가 부딪히는 둔탁한 소리를 위해 주파수를 낮추고 빠르게 떨어뜨림
-    osc.type = 'square';
-    osc.frequency.setValueAtTime(150, this.ctx.currentTime);
-    osc.frequency.exponentialRampToValueAtTime(40, this.ctx.currentTime + 0.1);
+    osc.type = 'triangle';
+    osc.frequency.setValueAtTime(400, this.ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(50, this.ctx.currentTime + 0.05);
 
-    // 어택감을 강하게
-    gainNode.gain.setValueAtTime(1, this.ctx.currentTime);
-    gainNode.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.15);
+    gainNode.gain.setValueAtTime(0.6, this.ctx.currentTime);
+    gainNode.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + 0.05);
 
     osc.connect(gainNode);
     gainNode.connect(this.ctx.destination);
 
     osc.start();
-    osc.stop(this.ctx.currentTime + 0.15);
+    osc.stop(this.ctx.currentTime + 0.05);
   }
 
   // 승리 시 축하 사운드 (팡파레: 빰- 빰- 빠-밤!)

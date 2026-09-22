@@ -1,5 +1,6 @@
 import { useEffect, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
+import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 
 interface CameraRigProps {
@@ -10,7 +11,6 @@ interface CameraRigProps {
 export default function CameraRig({ myRole, isCheck = false }: CameraRigProps) {
   const { camera, size } = useThree();
   const targetPosition = new THREE.Vector3();
-  const targetLookAt = new THREE.Vector3(0, 0, 0);
 
   // 흔들림 효과 지속 시간 관리
   const shakeTime = useRef(0);
@@ -24,11 +24,16 @@ export default function CameraRig({ myRole, isCheck = false }: CameraRigProps) {
     prevCheck.current = isCheck;
   }, [isCheck]);
 
-  // 반응형 카메라: 세로 화면(모바일)일 때 카메라를 더 뒤/위로 뺌
+  // 반응형 카메라: 세로 화면(모바일)일 때는 기울기를 완전히 없애고(Top-Down) 최대한 넓게 보이도록 설정
   const isMobile = size.width < size.height;
-  const dist = isMobile ? 18 : 12;
-  const height = isMobile ? 13 : 8;
+  
+  // 모바일은 Z축 거의 0으로 탑다운 구현, 데스크탑은 비스듬한 3D 뷰 유지
+  const dist = isMobile ? 0.01 : 7.2; 
+  // 모바일은 화면에 맞게 카메라를 높이 올림
+  const height = isMobile ? 22 : 10.4;
 
+  // 항상 보드의 정중앙(0,0,0)을 바라보도록 설정
+  const targetLookAt = new THREE.Vector3(0, 0, 0);
   useFrame((state, delta) => {
     // 180도 회전하여 내 기물이 앞쪽(아래)에 보이도록 설정
     if (myRole === 'han') {
